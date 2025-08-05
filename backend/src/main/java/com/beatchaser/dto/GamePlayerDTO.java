@@ -11,8 +11,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class GamePlayerDTO {
-    private Long id;
-    private Long gameSessionId;
+    private UUID id;
+    private UUID gameSessionId;
     private UUID playerId;
     private String playerName;
     private Instant joinTime;

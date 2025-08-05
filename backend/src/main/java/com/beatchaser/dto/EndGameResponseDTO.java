@@ -3,6 +3,7 @@ package com.beatchaser.dto;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -10,10 +11,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class EndGameResponseDTO {
-    Long sessionId;
-            Boolean finished;
-            int totalScore;
-            int totalRounds;
-            LocalDateTime endTime;
-
+    UUID sessionId;
+    Boolean finished;
+    int totalScore;
+    int totalRounds;
+    LocalDateTime endTime;
 }

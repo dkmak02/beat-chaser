@@ -3,6 +3,7 @@ package com.beatchaser.dto.session;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -10,7 +11,7 @@ import java.time.Instant;
 @AllArgsConstructor
 @Builder
 public class SessionCreated {
-    Long id;
+    UUID id;
     int totalRounds;
     Instant createdAt;
 }

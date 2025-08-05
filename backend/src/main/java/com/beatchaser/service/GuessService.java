@@ -4,106 +4,109 @@ import com.beatchaser.dto.guess.GuessRequestDTO;
 import com.beatchaser.dto.guess.GuessResponseDTO;
 import com.beatchaser.exception.GameSessionFinishedException;
 import com.beatchaser.exception.GameSessionNotFoundException;
-import com.beatchaser.model.GameSession;
+import com.beatchaser.model.Game;
 import com.beatchaser.model.Guess;
-import com.beatchaser.model.GameRound;
-import com.beatchaser.repository.GameRoundRepository;
-import com.beatchaser.repository.GameSessionRepository;
+import com.beatchaser.model.Round;
+import com.beatchaser.model.User;
+import com.beatchaser.repository.GameRepository;
 import com.beatchaser.repository.GuessRepository;
+import com.beatchaser.repository.RoundRepository;
 import com.beatchaser.repository.SongRepository;
+import com.beatchaser.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class GuessService {
-
     private final GuessRepository guessRepository;
-    private final GameSessionRepository gameSessionRepository;
+    private final GameRepository gameRepository;
     private final SongRepository songRepository;
     private static final int ROUND_SKIPPED = -2;
     private static final int BASE_POINTS = 10;
     private static final int BONUS_FAST = 5;
     private static final int BONUS_OK = 3;
-    private final GameRoundRepository gameRoundRepository;
-    private final GameSessionService gameSessionService;
-    private final GameRoundService gameRoundService;
+    private final RoundRepository roundRepository;
+    private final GameService gameService;
+    private final RoundService roundService;
     private final WebSocketService webSocketService;
+    private final UserRepository userRepository;
 
     public void submitGuess(GuessRequestDTO dto) {
-        var session = findAndValidateGameSession(dto.getGameSessionId());
-        var currentRound = gameRoundRepository.findByGameSessionAndRoundNumber(session.getId(), session.getCurrentRound())
+        var game = findAndValidateGame(dto.getGameId());
+        var currentRound = roundRepository.findByGameAndRoundNumber(game.getId(), dto.getRoundNumber())
                 .orElseThrow(() -> new RuntimeException("Game round not found"));
         boolean correct = checkCorrectness(dto.getGuessedSongId(), currentRound);
         var points = correct ? calculatePoints(dto.getReactionTimeMs()) : 0;
         var currentSong = currentRound.getSong();
+        var user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         Guess guess = Guess.builder()
-                .gameSession(session)
-                .gameRound(currentRound)
-                .song(currentSong)
-                .guessedSongId(dto.getGuessedSongId())
-                .correct(correct)
-                .reactionTimeMs(dto.getReactionTimeMs())
-                .playerId(dto.getPlayerId())
+                .round(currentRound)
+                .user(user)
+                .guessText(dto.getGuessText())
+                .guessedAt(LocalDateTime.now())
+                .isCorrect(correct)
+                .pointsAwarded(points)
+                .timeTakenMs(dto.getReactionTimeMs())
                 .build();
         guessRepository.save(guess);
 
         if (correct) {
-            updateGameSessionAndRound(session, points, true);
-
+            updateGameAndRound(game, dto.getRoundNumber(), points, true);
         }
-        var gameOver = session.getTotalRounds() < session.getCurrentRound();
+        
+        var totalRounds = roundRepository.countByGame(game);
+        var gameOver = totalRounds <= dto.getRoundNumber();
         if (gameOver) {
-            gameSessionService.endGame(session.getId());
-        }
-        else {
+            gameService.endGame(game.getId());
+        } else {
             // Send round start event for next round
-            var roundStartData = new Object() {
-                public final int currentRound = session.getCurrentRound() + 1;
-                public final int totalRounds = session.getTotalRounds();
-            };
-            webSocketService.sendRoundStartEvent(session.getId(), roundStartData);
-            gameSessionService.getCurrentSong(session);
+            RoundStartData roundStartData = new RoundStartData(dto.getRoundNumber() + 1, (int) totalRounds);
+            webSocketService.sendRoundStartEvent(game.getId(), roundStartData);
+            gameService.getCurrentSong(game, dto.getRoundNumber() + 1);
         }
+        
         GuessResponseDTO response = GuessResponseDTO.builder()
                 .correct(correct)
                 .pointsAwarded(points)
                 .gameOver(gameOver)
-                .currentRound(session.getCurrentRound())
-                .totalRounds(session.getTotalRounds())
+                .currentRound(dto.getRoundNumber())
+                .totalRounds((int) totalRounds)
                 .message(correct ? "Correct! Great job!" : "Wrong guess. Try again!")
                 .build();
 
-        webSocketService.sendGuessEvent(session.getId(), response);
+        webSocketService.sendGuessEvent(game.getId(), response);
     }
 
-    public void skipRound(Long gameSessionId) {
-        var session = findAndValidateGameSession(gameSessionId);
-        updateGameSessionAndRound(session, ROUND_SKIPPED, false);
-        var gameOver = session.getTotalRounds() < session.getCurrentRound();
+    public void skipRound(UUID gameId, Integer roundNumber) {
+        var game = findAndValidateGame(gameId);
+        updateGameAndRound(game, roundNumber, ROUND_SKIPPED, false);
+        var totalRounds = roundRepository.countByGame(game);
+        var gameOver = totalRounds <= roundNumber;
         if (gameOver) {
-            gameSessionService.endGame(session.getId());
+            gameService.endGame(game.getId());
         } else {
-            gameSessionService.getCurrentSong(session);
+            gameService.getCurrentSong(game, roundNumber + 1);
         }
     }
 
-    private GameSession findAndValidateGameSession(Long gameSessionId) {
-        GameSession session = gameSessionRepository.findById(gameSessionId)
-                .orElseThrow(() -> new GameSessionNotFoundException("No session with given id: " + gameSessionId + " found"));
-        if(session.getFinished()){
-            throw new GameSessionFinishedException("Session over, start a new session!");
+    private Game findAndValidateGame(UUID gameId) {
+        Game game = gameRepository.findById(gameId)
+                .orElseThrow(() -> new GameSessionNotFoundException("No game with given id: " + gameId + " found"));
+        if(game.getStatus() == Game.GameStatus.FINISHED){
+            throw new GameSessionFinishedException("Game over, start a new game!");
         }
-        return session;
+        return game;
     }
 
-
-
-    private void updateGameSessionAndRound(GameSession session, int points, boolean status) {
-        gameRoundService.setGameRoundStatus(session.getCurrentRound(), session.getId(), status);
-        session.setCurrentRound(session.getCurrentRound() + 1);
-        gameSessionRepository.save(session);
+    private void updateGameAndRound(Game game, Integer roundNumber, int points, boolean status) {
+        roundService.setRoundStatus(roundNumber, game.getId(), status);
+        // Note: Game doesn't track current round, it's managed by the frontend
     }
 
     private int calculatePoints(Integer reactionTimeMs) {
@@ -115,7 +118,17 @@ public class GuessService {
         return points;
     }
 
-    private boolean checkCorrectness(Long guessedSongId, GameRound currentRound) {
+    private boolean checkCorrectness(UUID guessedSongId, Round currentRound) {
         return guessedSongId.equals(currentRound.getSong().getId());
+    }
+    
+    public static class RoundStartData {
+        public final int currentRound;
+        public final int totalRounds;
+        
+        public RoundStartData(int currentRound, int totalRounds) {
+            this.currentRound = currentRound;
+            this.totalRounds = totalRounds;
+        }
     }
 }

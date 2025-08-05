@@ -9,6 +9,8 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
 
+import java.util.UUID;
+
 @Controller
 @RequiredArgsConstructor
 @Slf4j
@@ -30,15 +32,18 @@ public class GuessWebSocketController {
     }
 
     @MessageMapping("/skip")
-    public void handleSkip(@Payload Long gameSessionId) {
-        log.info("Received WebSocket skip request for session: {}", gameSessionId);
+    public void handleSkip(@Payload SkipRequest request) {
+        log.info("Received WebSocket skip request for game: {}, round: {}", request.gameId, request.roundNumber);
 
         try {
-            guessService.skipRound(gameSessionId);
+            guessService.skipRound(request.gameId, request.roundNumber);
         } catch (Exception e) {
             log.error("Error processing WebSocket skip", e);
         }
     }
 
-
+    public static class SkipRequest {
+        public UUID gameId;
+        public Integer roundNumber;
+    }
 }

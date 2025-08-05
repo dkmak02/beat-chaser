@@ -9,41 +9,41 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "songs")
+@Table(name = "lobbies")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Song {
+public class Lobby {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String title;
-
-    @Column(columnDefinition = "TEXT")
-    private String artist;
-
-    @Column(columnDefinition = "TEXT")
-    private String album;
-
-    @Column(name = "duration_seconds")
-    private Integer durationSeconds;
-
-    @Column(name = "external_id", columnDefinition = "TEXT")
-    private String externalId;
-
-    @Column(name = "audio_preview_url", columnDefinition = "TEXT")
-    private String audioPreviewUrl;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "host_user_id")
+    private User hostUser;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(unique = true, length = 8)
+    private String code;
+
+    @Column(name = "max_players")
+    private Integer maxPlayers;
+
     @Column(columnDefinition = "JSONB")
     @JdbcTypeCode(SqlTypes.JSON)
-    private String metadata;
+    private String settings;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private LobbyStatus status = LobbyStatus.OPEN;
+
+    public enum LobbyStatus {
+        OPEN, CLOSED, IN_GAME
+    }
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
     }
-}
+} 

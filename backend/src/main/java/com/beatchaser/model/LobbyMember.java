@@ -7,17 +7,17 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "game_players")
+@Table(name = "lobby_members")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class GamePlayer {
+public class LobbyMember {
 
     @EmbeddedId
-    private GamePlayerId id;
+    private LobbyMemberId id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("gameId")
-    @JoinColumn(name = "game_id")
-    private Game game;
+    @MapsId("lobbyId")
+    @JoinColumn(name = "lobby_id")
+    private Lobby lobby;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("userId")
@@ -30,12 +30,6 @@ public class GamePlayer {
     @Column(name = "is_ready", nullable = false)
     private Boolean isReady = false;
 
-    @Column(name = "is_host", nullable = false)
-    private Boolean isHost = false;
-
-    @Column(nullable = false)
-    private Integer score = 0;
-
     @PrePersist
     protected void onCreate() {
         joinedAt = LocalDateTime.now();
@@ -43,8 +37,8 @@ public class GamePlayer {
 
     @Embeddable
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class GamePlayerId {
-        private UUID gameId;
+    public static class LobbyMemberId {
+        private UUID lobbyId;
         private UUID userId;
     }
-}
+} 

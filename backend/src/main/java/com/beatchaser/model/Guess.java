@@ -3,7 +3,7 @@ package com.beatchaser.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -12,32 +12,34 @@ import java.util.UUID;
 public class Guess {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "game_session_id", nullable = false)
-    private GameSession gameSession;
+    @JoinColumn(name = "round_id", nullable = false)
+    private Round round;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "game_round_id", nullable = false)
-    private GameRound gameRound;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "song_id", nullable = false)
-    private Song song;
+    @Column(name = "guess_text", nullable = false, columnDefinition = "TEXT")
+    private String guessText;
 
-    @Column(name = "guessed_song_id")
-    private Long guessedSongId;
+    @Column(name = "guessed_at", nullable = false)
+    private LocalDateTime guessedAt;
 
-    private Boolean correct = false;
+    @Column(name = "is_correct")
+    private Boolean isCorrect;
 
-    @Column(name = "reaction_time_ms")
-    private Integer reactionTimeMs;
+    @Column(name = "points_awarded")
+    private Integer pointsAwarded = 0;
 
-    @Column(name = "guess_time")
-    private Instant guessTime = Instant.now();
+    @Column(name = "time_taken_ms")
+    private Integer timeTakenMs;
 
-    @Column(name = "player_id")
-    private UUID playerId;
+    @PrePersist
+    protected void onCreate() {
+        guessedAt = LocalDateTime.now();
+    }
 }

@@ -1,30 +1,29 @@
 package com.beatchaser.service;
-import com.beatchaser.model.GameRound;
-import com.beatchaser.model.GameSession;
-import com.beatchaser.repository.GameRoundRepository;
+import com.beatchaser.model.Round;
+import com.beatchaser.model.Game;
+import com.beatchaser.repository.RoundRepository;
 import com.beatchaser.repository.SongRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class GameRoundService {
-    private final GameRoundRepository gameRoundRepository;
+public class RoundService {
+    private final RoundRepository roundRepository;
     private final SongRepository songRepository;
 
-        public void setGameRoundStatus(int roundId, Long sessionId, boolean status) {
-            var currentRound = gameRoundRepository.findByGameSessionAndRoundNumber(sessionId, roundId)
-                    .orElseThrow(() -> new RuntimeException("Game round not found"));
-            currentRound.setGuessedCorrectly(status);
-            gameRoundRepository.save(currentRound);
+    public void setRoundStatus(int roundId, UUID gameId, boolean status) {
+        var currentRound = roundRepository.findByGameAndRoundNumber(gameId, roundId)
+                .orElseThrow(() -> new RuntimeException("Game round not found"));
+        currentRound.setIsSkipped(status);
+        roundRepository.save(currentRound);
     }
-    public void createRounds(int numberOfRounds, GameSession session) {
+    
+    public void createRounds(int numberOfRounds, Game game) {
         var songs = songRepository.findRandomSongs(numberOfRounds);
         
         if (songs.isEmpty()) {
@@ -35,17 +34,18 @@ public class GameRoundService {
             throw new RuntimeException("Not enough songs in database. Found " + songs.size() + " songs, but need " + numberOfRounds);
         }
         
-        List<GameRound> gameRounds = new ArrayList<>();
+        List<Round> gameRounds = new ArrayList<>();
         int i = 1;
         for (var song : songs) {
             gameRounds.add(
-                    GameRound.builder()
-                            .gameSession(session)
+                    Round.builder()
+                            .game(game)
                             .song(song)
                             .roundNumber(i++)
+                            .isSkipped(false)
                             .build()
             );
         }
-        gameRoundRepository.saveAll(gameRounds);
+        roundRepository.saveAll(gameRounds);
     }
-}
+} 
