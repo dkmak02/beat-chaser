@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Play, Settings, Clock, Hash, Music2, Target, Users } from 'lucide-react';
+import { ArrowLeft, Play, Settings, Clock, Hash, Music2, Target, Users, LogIn } from 'lucide-react';
 import { useGameConfig } from '@/contexts/GameConfigContext';
+import { useUser } from '@/contexts/UserContext';
+import { Select, Slider } from 'antd';
 
 interface GameConfig {
   mode: 'multi';
@@ -17,6 +19,7 @@ interface GameConfig {
 export default function MultiplayerConfig() {
   const router = useRouter();
   const { setGameConfig } = useGameConfig();
+  const { isLoggedIn, username } = useUser();
   const [config, setConfig] = useState<GameConfig>({
     mode: 'multi',
     rounds: 10,
@@ -26,7 +29,17 @@ export default function MultiplayerConfig() {
     maxPlayers: 4
   });
 
+  // Redirect to home if not logged in
+  useEffect(() => {
+    if (!isLoggedIn) {
+      router.push('/');
+    }
+  }, [isLoggedIn, router]);
+
   const handleSubmit = () => {
+    if (!isLoggedIn) {
+      return;
+    }
     // Save configuration to context
     setGameConfig({
       rounds: config.rounds,
@@ -59,6 +72,29 @@ export default function MultiplayerConfig() {
     }
   };
 
+  // Show login required message if not logged in
+  if (!isLoggedIn) {
+    return (
+      <div className="h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-6 overflow-hidden">
+        <div className="max-w-4xl mx-auto h-full flex flex-col items-center justify-center">
+          <div className="text-center">
+            <div className="w-24 h-24 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <LogIn className="w-12 h-12 text-white" />
+            </div>
+            <h1 className="text-3xl text-white mb-4">Login Required</h1>
+            <p className="text-purple-200 text-lg mb-6">You need to be logged in to start a multiplayer game</p>
+            <button
+              onClick={() => router.push('/')}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3 rounded-xl font-medium"
+            >
+              Go to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-6 overflow-hidden">
       <div className="max-w-4xl mx-auto h-full flex flex-col">
@@ -76,6 +112,7 @@ export default function MultiplayerConfig() {
               Multiplayer Configuration
             </h1>
             <p className="text-purple-200 text-sm">Set up your multiplayer music battle</p>
+            <p className="text-purple-300 text-sm">Logged in as: {username}</p>
           </div>
         </div>
 
@@ -98,25 +135,31 @@ export default function MultiplayerConfig() {
 
             {/* Player Count */}
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4">
-              <div className="flex items-center mb-4">
+              <div className="flex items-center mb-3">
                 <Users className="w-5 h-5 text-green-300 mr-2" />
-                <h3 className="text-lg text-white">Maximum Players</h3>
-                <div className="ml-auto bg-white/10 px-3 py-1 rounded-full text-sm text-white">
+                <h3 className="text-lg text-white">Player Count</h3>
+              </div>
+              <div className="px-2">
+                <Slider
+                  min={2}
+                  max={6}
+                  step={1}
+                  value={config.maxPlayers}
+                  onChange={(value) => setConfig({ ...config, maxPlayers: value })}
+                  marks={{
+                    2: '2',
+                    3: '3',
+                    4: '4',
+                    5: '5',
+                    6: '6'
+                  }}
+                  tooltip={{
+                    formatter: (value) => `${value} players`
+                  }}
+                />
+                <div className="text-center text-purple-200 text-sm mt-2">
                   {config.maxPlayers} players
                 </div>
-              </div>
-              <input
-                type="range"
-                min="2"
-                max="8"
-                value={config.maxPlayers}
-                onChange={(e) => setConfig(prev => ({ ...prev, maxPlayers: parseInt(e.target.value) }))}
-                className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-xs text-purple-200 mt-2">
-                <span>2 players</span>
-                <span>4 players (Recommended)</span>
-                <span>8 players</span>
               </div>
             </div>
 
@@ -127,162 +170,137 @@ export default function MultiplayerConfig() {
                   <Target className="w-5 h-5 text-orange-300 mr-2" />
                   <h3 className="text-lg text-white">Difficulty Level</h3>
                 </div>
-                <select 
-                  value={config.difficulty} 
-                  onChange={(e) => setConfig(prev => ({ ...prev, difficulty: e.target.value as 'easy' | 'medium' | 'hard' }))}
-                  className="w-full bg-white/10 border border-white/20 rounded-lg p-2 text-white text-sm focus:border-blue-400 transition-all duration-300"
-                >
-                  <option value="easy" className="bg-gray-800">Easy</option>
-                  <option value="medium" className="bg-gray-800">Medium</option>
-                  <option value="hard" className="bg-gray-800">Hard</option>
-                </select>
-                <p className="text-xs text-purple-200 mt-2 opacity-75">
-                  {getDifficultyDescription(config.difficulty)}
-                </p>
+                <Select
+                  value={config.difficulty}
+                  onChange={(value) => setConfig({ ...config, difficulty: value as 'easy' | 'medium' | 'hard' })}
+                  className="w-full"
+                  options={[
+                    { value: 'easy', label: 'Easy - Popular hits with longer clips (20-30s)' },
+                    { value: 'medium', label: 'Medium - Mix of popular and deep cuts (15-25s)' },
+                    { value: 'hard', label: 'Hard - Obscure tracks with short clips (5-15s)' }
+                  ]}
+                />
               </div>
 
               <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4">
                 <div className="flex items-center mb-3">
-                  <Music2 className="w-5 h-5 text-blue-300 mr-2" />
+                  <Music2 className="w-5 h-5 text-green-300 mr-2" />
                   <h3 className="text-lg text-white">Music Category</h3>
                 </div>
-                <select 
-                  value={config.category} 
-                  onChange={(e) => setConfig(prev => ({ ...prev, category: e.target.value as 'pop' | 'rock' | 'classical' | 'mixed' }))}
-                  className="w-full bg-white/10 border border-white/20 rounded-lg p-2 text-white text-sm focus:border-blue-400 transition-all duration-300"
-                >
-                  <option value="mixed" className="bg-gray-800">🎵 Mixed Genres</option>
-                  <option value="pop" className="bg-gray-800">🎤 Pop & Hip-Hop</option>
-                  <option value="rock" className="bg-gray-800">🎸 Rock & Alternative</option>
-                  <option value="classical" className="bg-gray-800">🎼 Classical & Orchestral</option>
-                </select>
-                <p className="text-xs text-purple-200 mt-2 opacity-75">
-                  {getCategoryDescription(config.category)}
-                </p>
+                <Select
+                  value={config.category}
+                  onChange={(value) => setConfig({ ...config, category: value as 'pop' | 'rock' | 'classical' | 'mixed' })}
+                  className="w-full"
+                  options={[
+                    { value: 'mixed', label: 'Mixed - All genres for maximum variety' },
+                    { value: 'pop', label: 'Pop - Pop, Hip-Hop, and contemporary hits' },
+                    { value: 'rock', label: 'Rock - Rock, Alternative, and Metal classics' },
+                    { value: 'classical', label: 'Classical - Classical, Orchestra, and Film scores' }
+                  ]}
+                />
               </div>
             </div>
 
-            {/* Game Length */}
-            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4">
-              <div className="flex items-center mb-4">
-                <Hash className="w-5 h-5 text-green-300 mr-2" />
-                <h3 className="text-lg text-white">Number of Rounds</h3>
-                <div className="ml-auto bg-white/10 px-3 py-1 rounded-full text-sm text-white">
-                  {config.rounds} rounds
+            {/* Game Settings */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4">
+                <div className="flex items-center mb-3">
+                  <Hash className="w-5 h-5 text-blue-300 mr-2" />
+                  <h3 className="text-lg text-white">Number of Rounds</h3>
+                </div>
+                <div className="px-2">
+                  <Slider
+                    min={5}
+                    max={20}
+                    step={5}
+                    value={config.rounds}
+                    onChange={(value) => setConfig({ ...config, rounds: value })}
+                    marks={{
+                      5: '5',
+                      10: '10',
+                      15: '15',
+                      20: '20'
+                    }}
+                    tooltip={{
+                      formatter: (value) => `${value} rounds`
+                    }}
+                  />
+                  <div className="text-center text-purple-200 text-sm mt-2">
+                    {config.rounds} rounds
+                  </div>
                 </div>
               </div>
-              <input
-                type="range"
-                min="5"
-                max="20"
-                value={config.rounds}
-                onChange={(e) => setConfig(prev => ({ ...prev, rounds: parseInt(e.target.value) }))}
-                className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-xs text-purple-200 mt-2">
-                <span>5 rounds (Quick)</span>
-                <span>10 rounds (Standard)</span>
-                <span>20 rounds (Marathon)</span>
-              </div>
-            </div>
 
-            {/* Time Limit */}
-            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4">
-              <div className="flex items-center mb-4">
-                <Clock className="w-5 h-5 text-red-300 mr-2" />
-                <h3 className="text-lg text-white">Time Limit per Question</h3>
-                <div className="ml-auto bg-white/10 px-3 py-1 rounded-full text-sm text-white">
-                  {config.timeLimit}s
+              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4">
+                <div className="flex items-center mb-3">
+                  <Clock className="w-5 h-5 text-yellow-300 mr-2" />
+                  <h3 className="text-lg text-white">Time Limit</h3>
                 </div>
-              </div>
-              <input
-                type="range"
-                min="15"
-                max="60"
-                step="5"
-                value={config.timeLimit}
-                onChange={(e) => setConfig(prev => ({ ...prev, timeLimit: parseInt(e.target.value) }))}
-                className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-xs text-purple-200 mt-2">
-                <span>15s (Speed)</span>
-                <span>30s (Standard)</span>
-                <span>60s (Relaxed)</span>
+                <div className="px-2">
+                  <Slider
+                    min={15}
+                    max={60}
+                    step={5}
+                    value={config.timeLimit}
+                    onChange={(value) => setConfig({ ...config, timeLimit: value })}
+                    marks={{
+                      15: '15s',
+                      30: '30s',
+                      45: '45s',
+                      60: '60s'
+                    }}
+                    tooltip={{
+                      formatter: (value) => `${value} seconds`
+                    }}
+                  />
+                  <div className="text-center text-purple-200 text-sm mt-2">
+                    {config.timeLimit} seconds
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Summary Panel */}
+          {/* Preview Panel */}
           <div className="lg:col-span-1">
-            <div className="bg-gradient-to-b from-white/15 to-white/5 backdrop-blur-sm border border-white/20 rounded-xl p-4 sticky top-6">
-              <h3 className="text-lg text-white mb-4 text-center">Game Summary</h3>
-              
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between items-center">
-                  <span className="text-purple-200 text-sm">Mode:</span>
-                  <span className="bg-blue-600/20 px-2 py-1 rounded text-xs text-blue-300 capitalize">
-                    Multiplayer
-                  </span>
+            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 h-full">
+              <h3 className="text-xl text-white mb-4 flex items-center">
+                <Play className="w-5 h-5 text-green-300 mr-2" />
+                Game Preview
+              </h3>
+              <div className="space-y-4">
+                <div className="bg-white/10 rounded-lg p-4">
+                  <div className="text-purple-200 font-medium">Mode</div>
+                  <div className="text-white">Multiplayer</div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-purple-200 text-sm">Players:</span>
-                  <span className="bg-white/10 px-2 py-1 rounded text-xs text-white">
-                    Up to {config.maxPlayers}
-                  </span>
+                <div className="bg-white/10 rounded-lg p-4">
+                  <div className="text-purple-200 font-medium">Players</div>
+                  <div className="text-white">{config.maxPlayers}</div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-purple-200 text-sm">Difficulty:</span>
-                  <span className={`px-2 py-1 rounded text-xs capitalize ${
-                    config.difficulty === 'easy' ? 'bg-green-600/20 text-green-300' :
-                    config.difficulty === 'medium' ? 'bg-yellow-600/20 text-yellow-300' :
-                    'bg-red-600/20 text-red-300'
-                  }`}>
-                    {config.difficulty}
-                  </span>
+                <div className="bg-white/10 rounded-lg p-4">
+                  <div className="text-purple-200 font-medium">Difficulty</div>
+                  <div className="text-white capitalize">{config.difficulty}</div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-purple-200 text-sm">Category:</span>
-                  <span className="bg-white/10 px-2 py-1 rounded text-xs text-white capitalize">
-                    {config.category}
-                  </span>
+                <div className="bg-white/10 rounded-lg p-4">
+                  <div className="text-purple-200 font-medium">Category</div>
+                  <div className="text-white capitalize">{config.category}</div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-purple-200 text-sm">Rounds:</span>
-                  <span className="bg-white/10 px-2 py-1 rounded text-xs text-white">
-                    {config.rounds}
-                  </span>
+                <div className="bg-white/10 rounded-lg p-4">
+                  <div className="text-purple-200 font-medium">Rounds</div>
+                  <div className="text-white">{config.rounds}</div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-purple-200 text-sm">Time Limit:</span>
-                  <span className="bg-white/10 px-2 py-1 rounded text-xs text-white">
-                    {config.timeLimit}s
-                  </span>
+                <div className="bg-white/10 rounded-lg p-4">
+                  <div className="text-purple-200 font-medium">Time Limit</div>
+                  <div className="text-white">{config.timeLimit}s</div>
                 </div>
               </div>
-
-              <div className="border-t border-white/20 pt-4 mb-4">
-                <div className="text-center text-xs text-purple-200 mb-1">Estimated Duration</div>
-                <div className="text-xl text-center text-white">
-                  ~{Math.ceil((config.rounds * config.timeLimit) / 60)} minutes
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <button 
-                  onClick={() => router.back()} 
-                  className="w-full bg-white/10 border border-white/30 hover:bg-white/20 text-white py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Menu
-                </button>
-                <button 
-                  onClick={handleSubmit} 
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-4 rounded-lg transition-all duration-300 hover:scale-105 shadow-lg flex items-center justify-center"
-                >
-                  <Play className="w-5 h-5 mr-2" />
-                  Create Room
-                </button>
-              </div>
+              <button
+                onClick={handleSubmit}
+                className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white py-3 px-6 rounded-xl font-medium mt-6 flex items-center justify-center"
+              >
+                <Play className="w-5 h-5 mr-2" />
+                Create Room
+              </button>
             </div>
           </div>
         </div>

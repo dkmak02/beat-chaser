@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { GameConfigProvider } from "@/contexts/GameConfigContext";
+import { UserProvider } from "@/contexts/UserContext";
+import Navbar from "@/components/Navbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,11 +28,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen overflow-hidden`}
       >
-        <GameConfigProvider>
-          {children}
-        </GameConfigProvider>
+        <UserProvider>
+          <GameConfigProvider>
+            <div className="h-screen flex flex-col">
+              <Navbar />
+              <main className="flex-1 overflow-hidden">
+                {children}
+              </main>
+            </div>
+          </GameConfigProvider>
+        </UserProvider>
       </body>
     </html>
   );
