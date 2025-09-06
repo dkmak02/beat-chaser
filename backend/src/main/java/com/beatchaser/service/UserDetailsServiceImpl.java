@@ -1,5 +1,6 @@
 package com.beatchaser.service;
 
+import com.beatchaser.dto.user.CustomUserDetails;
 import com.beatchaser.model.User;
 import com.beatchaser.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,9 +23,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
-        return new org.springframework.security.core.userdetails.User(
+        return new CustomUserDetails(
+                user.getId(),
                 user.getUsername(),
                 user.getPasswordHash(),
+                user.getEmail(),
                 List.of(new SimpleGrantedAuthority("ROLE_USER"))
         );
     }

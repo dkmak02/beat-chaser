@@ -26,7 +26,7 @@ public class SongService {
     public List<SongDTO> getAllSongs() {
         return songRepository.findAll()
                 .stream()
-                .map(SongMapper::toDto)
+                .map(SongMapper::toSongDTO)
                 .toList();
     }
 }

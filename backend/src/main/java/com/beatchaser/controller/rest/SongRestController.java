@@ -1,6 +1,5 @@
 package com.beatchaser.controller.rest;
 
-import com.beatchaser.dto.ApiResponse;
 import com.beatchaser.dto.SongDTO;
 import com.beatchaser.dto.session.SessionCreated;
 import com.beatchaser.service.SongService;
@@ -11,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -21,14 +21,7 @@ public class SongRestController {
     private final SongService songService;
 
     @GetMapping()
-    public ResponseEntity<ApiResponse<List<SongDTO>>> getAllSongs() {
-        try {
-            List<SongDTO> songs = songService.getAllSongs();
-            return ResponseEntity.ok(ApiResponse.success("Songs retrieved successfully", songs));
-        } catch (Exception e) {
-            log.error("Error retrieving songs: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to retrieve songs"));
-        }
+    public ResponseEntity<List<SongDTO>> getAllSongs() {
+        return ResponseEntity.ok(songService.getAllSongs());
     }
 }

@@ -1,5 +1,6 @@
 package com.beatchaser.provider;
 
+import com.beatchaser.dto.user.CustomUserDetails;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.Authentication;
@@ -17,9 +18,13 @@ public class JwtTokenProvider {
     public String generateToken(Authentication auth) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expiration);
-
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
         return Jwts.builder()
-                .subject(auth.getName())
+                .subject(userDetails.getUsername())
+                .claim("id", userDetails.getId())
+                .claim("username", userDetails.getUsername())
+                .claim("email", userDetails.getEmail())
+                .claim("roles", userDetails.getAuthorities())
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(secretKey)
