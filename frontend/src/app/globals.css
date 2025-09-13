@@ -24,3 +24,29 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Disable seeking on audio player */
+.no-seek-audio-player .rhap_progress-bar {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+.no-seek-audio-player .rhap_progress-indicator {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+.no-seek-audio-player .rhap_progress-filled {
+  pointer-events: none !important;
+}
+
+/* Hide time display */
+.no-seek-audio-player .rhap_time {
+  display: none !important;
+}
+
+/* Hide progress section completely */
+.no-seek-audio-player .rhap_progress-section {
+  display: none !important;
+}
+

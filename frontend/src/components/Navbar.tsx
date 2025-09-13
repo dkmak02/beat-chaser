@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Layout, Button, Space, Avatar, Dropdown, theme } from 'antd';
 import { useRouter } from 'next/navigation';
-import { LoginModal, SignUpModal, ProfileModal } from '../components';
+import { LoginModal, SignUpModal, ProfileModal, WebSocketStatus } from '../components';
 import { useRegisterMutation, useLoginMutation } from '../hooks/useAuth';
 import { useAuth } from '../contexts/AuthContext';
 import { UserOutlined, LogoutOutlined } from '@ant-design/icons';
@@ -111,6 +111,7 @@ export default function Navbar() {
 
         {/* Auth Section */}
         <Space size="middle">
+          <WebSocketStatus />
           {isAuthenticated ? (
             // Authenticated user dropdown
             <Dropdown

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ReactQueryProvider from "../providers/ReactQueryProvider";
 import { AuthProvider } from "../contexts/AuthContext";
+import { WebSocketProvider } from "../contexts/WebSocketContext";
 import { Navbar } from "../components";
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,12 +32,14 @@ export default function RootLayout({
       >
             <ReactQueryProvider>
               <AuthProvider>
-                <div className="h-screen flex flex-col">
-                  <Navbar />
-                  <main className="flex-1 overflow-hidden">
-                    {children}
-                  </main>
-                </div>
+                <WebSocketProvider>
+                  <div className="h-screen flex flex-col">
+                    <Navbar />
+                    <main className="flex-1 overflow-hidden">
+                      {children}
+                    </main>
+                  </div>
+                </WebSocketProvider>
               </AuthProvider>
             </ReactQueryProvider>
       </body>
