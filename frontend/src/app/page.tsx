@@ -1,269 +1,213 @@
 'use client';
-
-import { useState } from 'react';
+import '@ant-design/v5-patch-for-react-19';
+import { Button, Typography, theme, Card, Row, Col } from 'antd';
 import { useRouter } from 'next/navigation';
-import { Music, Users, User, HelpCircle, Star, Headphones, Award, LogIn } from 'lucide-react';
-import { useUser } from '@/contexts/UserContext';
-import { Button, Card, Avatar, Typography, Space, Row, Col, Modal, Layout, Tag } from 'antd';
+import { useAuth } from '../contexts/AuthContext';
+import { PlayCircleOutlined, TeamOutlined, LockOutlined } from '@ant-design/icons';
 
-const { Content } = Layout;
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 export default function Home() {
   const router = useRouter();
-  const { isLoggedIn, username } = useUser();
-  const [messages, setMessages] = useState<string[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
-  const [gameState, setGameState] = useState<'menu' | 'playing' | 'gameOver'>('menu');
-  const [gameResults, setGameResults] = useState<{ finalScore: number; totalRounds: number } | null>(null);
-  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
-  const [showHelpModal, setShowHelpModal] = useState(false);
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
-  const handleMessage = (message: string) => {
-    setMessages(prev => [...prev, message]);
-  };
+  const {
+    token: { colorBgContainer, borderRadiusLG, colorBgLayout },
+  } = theme.useToken();
 
-  const handleConnectionChange = (connected: boolean) => {
-    setIsConnected(connected);
-  };
-
-  const handleGameOver = (finalScore: number, totalRounds: number) => {
-    setGameResults({ finalScore, totalRounds });
-    setGameState('gameOver');
-  };
-
-  const handlePlayAgain = () => {
-    setMessages([]);
-    setGameState('menu');
-    setGameResults(null);
-  };
-
-  const handleBackToMenu = () => {
-    setMessages([]);
-    setGameState('menu');
-    setGameResults(null);
-  };
-
-  const handleStartGame = (mode: 'singleplayer' | 'multiplayer') => {
-    if (!isLoggedIn) {
-      return;
-    }
-    router.push(`/config/${mode}`);
-  };
-
-  // Show playing state
-  if (gameState === 'playing') {
+  // Show loading state
+  if (authLoading) {
     return (
-      <Layout className="h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pt-16">
-        <Content className="p-4 overflow-hidden">
-          <div className="max-w-6xl mx-auto h-full">
-            <div className="text-center mb-4">
-              <Title level={2} className="text-white mb-1">🎵 Beat Chaser</Title>
-              <Text className="text-gray-300 text-base">Test your music knowledge!</Text>
-            </div>
-          </div>
-        </Content>
-      </Layout>
+      <div style={{ 
+        padding: '0 48px', 
+        height: '100%',
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <div>Ładowanie...</div>
+      </div>
     );
   }
 
-  // Show main menu
   return (
-    <Layout className="h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pt-16">
-      <Content className="flex flex-col items-center justify-center p-6 h-full overflow-auto">
-        {/* Hero Section */}
-        <div className="text-center mb-8 max-w-3xl">
-          <Space direction="vertical" size="large" align="center">
-            <div className="flex items-center justify-center">
-              <Avatar 
-                icon={<Music />} 
-                size={64} 
-                className="bg-purple-500 mr-4"
-              />
-              <div>
-                <Title level={1} className="text-white mb-0">
-                  Beat Chaser
-                </Title>
-                <div className="flex items-center justify-center gap-1">
-                  <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" />
-                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse delay-300" />
-                  <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse delay-600" />
-                </div>
-              </div>
-            </div>
-            <div>
-              <Title level={3} className="text-purple-200 mb-2">Test your music knowledge!</Title>
-              <Paragraph className="text-purple-300 text-lg">
-                Guess songs, compete with friends, and discover new music
-              </Paragraph>
-            </div>
-            
-            {/* Show login status */}
-            {isLoggedIn && (
-              <Tag color="purple" className="text-sm">
-                <User className="w-4 h-4 mr-1" />
-                Welcome back, {username}!
-              </Tag>
-            )}
-          </Space>
-        </div>
-
-        {/* Game Mode Cards */}
-        <Row gutter={[24, 24]} className="max-w-4xl w-full mb-8">
-          <Col xs={24} md={12}>
-            <Card
-              hoverable
-              className={`relative transition-all duration-300 ${
-                hoveredCard === 'singleplayer' ? 'scale-105' : 'hover:scale-105'
-              }`}
-              onMouseEnter={() => setHoveredCard('singleplayer')}
-              onMouseLeave={() => setHoveredCard(null)}
-              onClick={() => handleStartGame('singleplayer')}
-              bodyStyle={{ padding: '32px', textAlign: 'center' }}
-            >
-              <Space direction="vertical" size="large" className="w-full">
-                <Avatar 
-                  icon={<User />} 
-                  size={64} 
-                  className="bg-gradient-to-r from-purple-500 to-blue-500"
-                />
-                <div>
-                  <Title level={3} className="mb-2">Single Player</Title>
-                  <Paragraph className="text-gray-600 mb-4">
-                    Challenge yourself with solo music guessing
-                  </Paragraph>
-                  <Space direction="vertical" size="small" className="text-sm text-gray-500">
-                    <Text>• Practice at your own pace</Text>
-                    <Text>• Track your progress</Text>
-                    <Text>• Multiple difficulty levels</Text>
-                  </Space>
-                </div>
-              </Space>
-              {!isLoggedIn && (
-                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                  <Space direction="vertical" align="center">
-                    <LogIn className="w-8 h-8 text-white" />
-                    <Text className="text-white">Login required</Text>
-                  </Space>
-                </div>
-              )}
-            </Card>
-          </Col>
-
-          <Col xs={24} md={12}>
-            <Card
-              hoverable
-              className={`relative transition-all duration-300 ${
-                hoveredCard === 'multiplayer' ? 'scale-105' : 'hover:scale-105'
-              }`}
-              onMouseEnter={() => setHoveredCard('multiplayer')}
-              onMouseLeave={() => setHoveredCard(null)}
-              onClick={() => handleStartGame('multiplayer')}
-              bodyStyle={{ padding: '32px', textAlign: 'center' }}
-            >
-              <Space direction="vertical" size="large" className="w-full">
-                <Avatar 
-                  icon={<Users />} 
-                  size={64} 
-                  className="bg-gradient-to-r from-blue-500 to-purple-500"
-                />
-                <div>
-                  <Title level={3} className="mb-2">Multiplayer</Title>
-                  <Paragraph className="text-gray-600 mb-4">
-                    Compete with friends in real-time battles
-                  </Paragraph>
-                  <Space direction="vertical" size="small" className="text-sm text-gray-500">
-                    <Text>• Real-time competition</Text>
-                    <Text>• Leaderboards</Text>
-                    <Text>• Team up or go solo</Text>
-                  </Space>
-                </div>
-              </Space>
-              {!isLoggedIn && (
-                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                  <Space direction="vertical" align="center">
-                    <LogIn className="w-8 h-8 text-white" />
-                    <Text className="text-white">Login required</Text>
-                  </Space>
-                </div>
-              )}
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Login Prompt */}
-        {!isLoggedIn && (
-          <Card className="max-w-md mx-auto text-center">
-            <Space direction="vertical" size="large" className="w-full">
-              <Avatar 
-                icon={<LogIn />} 
-                size={48} 
-                className="bg-gradient-to-r from-purple-500 to-blue-500"
-              />
-              <div>
-                <Title level={4} className="mb-2">Login to Start Playing</Title>
-                <Paragraph className="text-gray-600 mb-4">
-                  Create an account or sign in to access all game modes
-                </Paragraph>
-              </div>
-              <Space>
-                <Button type="primary" size="large">
-                  Login
-                </Button>
-                <Button type="primary" size="large">
-                  Sign Up
-                </Button>
-              </Space>
-            </Space>
-          </Card>
-        )}
-
-        {/* Footer */}
-        <div className="mt-auto">
-          <Button 
-            type="link" 
-            icon={<HelpCircle />}
-            onClick={() => setShowHelpModal(true)}
-            className="text-purple-300 hover:text-white"
-          >
-            How to Play
-          </Button>
-        </div>
-      </Content>
-
-      {/* Help Modal */}
-      <Modal
-        title="How to Play"
-        open={showHelpModal}
-        onCancel={() => setShowHelpModal(false)}
-        footer={[
-          <Button key="gotit" type="primary" onClick={() => setShowHelpModal(false)}>
-            Got it!
-          </Button>
-        ]}
-        width={500}
+    <div style={{ 
+      padding: '24px 48px', 
+      height: '100%',
+      display: 'flex', 
+      flexDirection: 'column',
+      overflow: 'auto',
+      background: colorBgLayout
+    }}>
+      <div
+        style={{
+          background: colorBgContainer,
+          flex: 1,
+          padding: 24,
+          borderRadius: borderRadiusLG,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-start',
+          minHeight: 0,
+        }}
       >
-        <Space direction="vertical" size="large" className="w-full">
-          <div>
-            <Title level={5}>🎵 Single Player</Title>
-            <Paragraph>
-              Listen to music clips and guess the song title and artist. Earn points for correct answers!
-            </Paragraph>
+        {isAuthenticated ? (
+          // Authenticated user - Game mode selection
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ textAlign: 'center', marginBottom: 32 }}>
+              <Title level={2}>Witaj, {user?.username}! 🎵</Title>
+              <Typography.Paragraph style={{ fontSize: '16px', color: '#666' }}>
+                Wybierz tryb gry i sprawdź swoją wiedzę muzyczną!
+              </Typography.Paragraph>
+            </div>
+
+            <div style={{ flex: '0 0 auto' }}>
+              <Row gutter={[24, 24]} justify="center" style={{ marginBottom: 48 }}>
+                {/* Singleplayer Card */}
+                <Col xs={24} sm={12} lg={8}>
+                  <Card
+                    hoverable
+                    style={{ 
+                      height: '200px',
+                      borderRadius: '12px',
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => router.push('/game/configure?mode=singleplayer')}
+                    cover={
+                      <div style={{
+                        height: '100px',
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '12px 12px 0 0'
+                      }}>
+                        <PlayCircleOutlined style={{ fontSize: '48px', color: 'white' }} />
+                      </div>
+                    }
+                    actions={[
+                      <Button 
+                        type="primary" 
+                        size="large" 
+                        style={{ width: '80%' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push('/game/configure?mode=singleplayer');
+                        }}
+                      >
+                        Graj Solo
+                      </Button>
+                    ]}
+                  >
+                    <Card.Meta
+                      title={<span style={{ fontSize: '18px', fontWeight: 'bold' }}>Singleplayer</span>}
+                      description="Graj w swoim tempie i poprawiaj swoje wyniki"
+                    />
+                  </Card>
+                </Col>
+
+                {/* Multiplayer Card */}
+                <Col xs={24} sm={12} lg={8}>
+                  <Card
+                    hoverable
+                    style={{ 
+                      height: '200px',
+                      borderRadius: '12px',
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => router.push('/game/configure?mode=multiplayer')}
+                    cover={
+                      <div style={{
+                        height: '100px',
+                        background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '12px 12px 0 0'
+                      }}>
+                        <TeamOutlined style={{ fontSize: '48px', color: 'white' }} />
+                      </div>
+                    }
+                    actions={[
+                      <Button 
+                        type="primary" 
+                        size="large" 
+                        style={{ width: '80%', backgroundColor: '#f5576c', borderColor: '#f5576c' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push('/game/configure?mode=multiplayer');
+                        }}
+                      >
+                        Graj z Innymi
+                      </Button>
+                    ]}
+                  >
+                    <Card.Meta
+                      title={<span style={{ fontSize: '18px', fontWeight: 'bold' }}>Multiplayer</span>}
+                      description="Rywalizuj z innymi graczami online"
+                    />
+                  </Card>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Quick Stats */}
+            <div style={{ marginTop: 32, textAlign: 'center', paddingTop: '24px', borderTop: '1px solid #f0f0f0' }}>
+              <Typography.Text type="secondary">
+                Twoje statystyki: 0 gier rozegranych | Najlepszy wynik: 0
+              </Typography.Text>
+            </div>
           </div>
-          <div>
-            <Title level={5}>👥 Multiplayer</Title>
-            <Paragraph>
-              Compete with friends in real-time. The fastest and most accurate player wins!
-            </Paragraph>
+        ) : (
+          // Non-authenticated user - Login prompt
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ marginBottom: 32 }}>
+              <LockOutlined style={{ fontSize: '64px', color: '#faad14', marginBottom: 16 }} />
+              <Title level={2}>Zaloguj się, aby grać! 🎵</Title>
+              <Typography.Paragraph style={{ fontSize: '16px', color: '#666', maxWidth: '500px', margin: '0 auto' }}>
+                Beat Chaser to gra muzyczna, która sprawdzi Twoją wiedzę! 
+                Aby rozpocząć grę, musisz się zalogować lub utworzyć nowe konto.
+              </Typography.Paragraph>
+            </div>
+
+            <div style={{ marginBottom: 24 }}>
+              <Typography.Title level={4} style={{ color: '#1677ff' }}>
+                Co Cię czeka po zalogowaniu:
+              </Typography.Title>
+              <Row gutter={16} justify="center" style={{ maxWidth: '600px', margin: '0 auto' }}>
+                <Col span={8}>
+                  <div style={{ textAlign: 'center', padding: '16px' }}>
+                    <PlayCircleOutlined style={{ fontSize: '32px', color: '#667eea', marginBottom: '8px' }} />
+                    <div style={{ fontWeight: 'bold' }}>Gra Solo</div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>Trenuj w swoim tempie</div>
+                  </div>
+                </Col>
+                <Col span={8}>
+                  <div style={{ textAlign: 'center', padding: '16px' }}>
+                    <TeamOutlined style={{ fontSize: '32px', color: '#f5576c', marginBottom: '8px' }} />
+                    <div style={{ fontWeight: 'bold' }}>Multiplayer</div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>Rywalizuj z innymi</div>
+                  </div>
+                </Col>
+                <Col span={8}>
+                  <div style={{ textAlign: 'center', padding: '16px' }}>
+                    <LockOutlined style={{ fontSize: '32px', color: '#faad14', marginBottom: '8px' }} />
+                    <div style={{ fontWeight: 'bold' }}>Statystyki</div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>Śledź swoje postępy</div>
+                  </div>
+                </Col>
+              </Row>
+            </div>
+
+            <Typography.Paragraph style={{ fontSize: '14px', color: '#999', marginTop: '32px' }}>
+              👆 Zaloguj się lub załóż konto używając przycisków w górnym menu
+            </Typography.Paragraph>
           </div>
-          <div>
-            <Title level={5}>🏆 Scoring</Title>
-            <Paragraph>
-              Points are awarded based on accuracy and speed. Perfect matches earn bonus points!
-            </Paragraph>
-          </div>
-        </Space>
-      </Modal>
-    </Layout>
+        )}
+      </div>
+    </div>
   );
 }
