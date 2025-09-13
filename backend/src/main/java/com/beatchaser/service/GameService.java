@@ -2,7 +2,9 @@ package com.beatchaser.service;
 
 import com.beatchaser.dto.EndGameResponseDTO;
 import com.beatchaser.dto.game.GameStarted;
+import com.beatchaser.dto.game.gameplayer.GamePlayerDTO;
 import com.beatchaser.dto.session.SessionCreated;
+import com.beatchaser.mapper.GamePlayerMapper;
 import com.beatchaser.model.GamePlayer;
 import com.beatchaser.model.Game;
 import com.beatchaser.model.User;
@@ -27,6 +29,7 @@ public class GameService {
 //    private final WebSocketService webSocketService;
     private final GamePlayerRepository gamePlayerRepository;
     private final UserRepository userRepository;
+    private final WebSocketService webSocketService;
 
     public SessionCreated createNewSoloGame(UUID playerId, int rounds) {
         var user = userRepository.findById(playerId).orElseThrow(() -> new RuntimeException("User not found"));
@@ -53,10 +56,15 @@ public class GameService {
            throw new RuntimeException("No players found for game: " + game.getId());
        }
        gameRepository.save(game);
-       return GameStarted.builder()
-               .startTime(game.getStartedAt())
-               .players(players)
-               .build();
+        List<GamePlayerDTO> playerDTOs = players.stream()
+                .map(GamePlayerMapper::map)
+                .toList();
+        var gameStarted = GameStarted.builder()
+                .startTime(game.getStartedAt())
+                .players(playerDTOs)
+                .build();
+        webSocketService.sendGameStartEvent(game.getId(),gameStarted);
+       return gameStarted;
     }
 
 //    public void getCurrentSong(Game game, Integer roundNumber) {
@@ -85,7 +93,7 @@ public class GameService {
                 .score(0)
                 .joinedAt(LocalDateTime.now())
                 .isHost(game.getHostUser().getId().equals(userId))
-                .isReady(false)
+                .isReady(true)
                 .build();
 
         return gamePlayerService.addGamePlayer(gamePlayer);

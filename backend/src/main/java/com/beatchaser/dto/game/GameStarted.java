@@ -1,5 +1,6 @@
 package com.beatchaser.dto.game;
 
+import com.beatchaser.dto.game.gameplayer.GamePlayerDTO;
 import com.beatchaser.model.GamePlayer;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,5 +14,5 @@ import java.util.List;
 @Builder
 public class GameStarted {
     LocalDateTime startTime;
-    List<GamePlayer> players;
+    List<GamePlayerDTO> players;
 }

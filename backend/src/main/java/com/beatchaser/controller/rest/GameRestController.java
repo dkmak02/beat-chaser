@@ -56,19 +56,9 @@ public class GameRestController {
     @PostMapping("/start")
     public ResponseEntity<GameStarted> startGame(
             @RequestParam UUID gameId) {
-//        try {
             var game = gameRepository.findById(gameId)
                     .orElseThrow(() -> new GameSessionNotFoundException("Game not found"));
 
-            return ResponseEntity.ok( gameService.startGame(game));
-//        } catch (GameSessionNotFoundException e) {
-//            log.error("Game not found: {}", e.getMessage());
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-//                    .body(ApiResponse.error("Game not found"));
-//        } catch (Exception e) {
-//            log.error("Error starting game: {}", e.getMessage());
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .body(ApiResponse.error("Failed to start game"));
-//        }
+            return ResponseEntity.ok(gameService.startGame(game));
     }
 }

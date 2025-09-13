@@ -1,40 +1,40 @@
-//package com.beatchaser.service;
-//
-//import com.beatchaser.dto.guess.GuessRequestDTO;
-//import com.beatchaser.dto.guess.GuessResponseDTO;
-//import com.beatchaser.exception.GameSessionFinishedException;
-//import com.beatchaser.exception.GameSessionNotFoundException;
-//import com.beatchaser.model.Game;
-//import com.beatchaser.model.Guess;
-//import com.beatchaser.model.Round;
-//import com.beatchaser.model.User;
-//import com.beatchaser.repository.GameRepository;
-//import com.beatchaser.repository.GuessRepository;
-//import com.beatchaser.repository.RoundRepository;
-//import com.beatchaser.repository.SongRepository;
-//import com.beatchaser.repository.UserRepository;
-//import lombok.RequiredArgsConstructor;
-//import org.springframework.stereotype.Service;
-//
-//import java.time.LocalDateTime;
-//import java.util.UUID;
-//
-//@Service
-//@RequiredArgsConstructor
-//public class GuessService {
-//    private final GuessRepository guessRepository;
-//    private final GameRepository gameRepository;
-//    private final SongRepository songRepository;
-//    private static final int ROUND_SKIPPED = -2;
-//    private static final int BASE_POINTS = 10;
-//    private static final int BONUS_FAST = 5;
-//    private static final int BONUS_OK = 3;
-//    private final RoundRepository roundRepository;
-//    private final GameService gameService;
-//    private final RoundService roundService;
-//    private final WebSocketService webSocketService;
-//    private final UserRepository userRepository;
-//
+package com.beatchaser.service;
+
+import com.beatchaser.dto.guess.GuessRequestDTO;
+import com.beatchaser.dto.guess.GuessResponseDTO;
+import com.beatchaser.exception.GameSessionFinishedException;
+import com.beatchaser.exception.GameSessionNotFoundException;
+import com.beatchaser.model.Game;
+import com.beatchaser.model.Guess;
+import com.beatchaser.model.Round;
+import com.beatchaser.model.User;
+import com.beatchaser.repository.GameRepository;
+import com.beatchaser.repository.GuessRepository;
+import com.beatchaser.repository.RoundRepository;
+import com.beatchaser.repository.SongRepository;
+import com.beatchaser.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class GuessService {
+    private final GuessRepository guessRepository;
+    private final GameRepository gameRepository;
+    private final SongRepository songRepository;
+    private static final int ROUND_SKIPPED = -2;
+    private static final int BASE_POINTS = 10;
+    private static final int BONUS_FAST = 5;
+    private static final int BONUS_OK = 3;
+    private final RoundRepository roundRepository;
+    private final GameService gameService;
+    private final RoundService roundService;
+    private final WebSocketService webSocketService;
+    private final UserRepository userRepository;
+
 //    public void submitGuess(GuessRequestDTO dto) {
 //        var game = findAndValidateGame(dto.getGameId());
 //        var currentRound = roundRepository.findByGameAndRoundNumber(game.getId(), dto.getRoundNumber())
@@ -131,4 +131,4 @@
 //            this.totalRounds = totalRounds;
 //        }
 //    }
-//}
+}
